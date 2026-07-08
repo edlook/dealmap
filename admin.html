@@ -204,6 +204,7 @@
     <div class="topbar-logo"><span class="topbar-logo-mark"></span>DealMap Admin</div>
     <div class="topbar-right">
       <span id="userEmail"></span>
+      <button class="btn-logout" onclick="openAccountModal()">Konto</button>
       <button class="btn-logout" onclick="logout()">Abmelden</button>
     </div>
   </div>
@@ -310,6 +311,42 @@
       <button type="button" class="btn-secondary" onclick="closeDeleteModal()">Abbrechen</button>
       <button type="button" class="btn-primary btn-delete-confirm" id="confirmDeleteBtn">Löschen</button>
     </div>
+  </div>
+</div>
+
+<!-- ============ ACCOUNT MODAL ============ -->
+<div class="modal-backdrop" id="accountBackdrop">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-head">
+      <h2>Konto</h2>
+      <button class="modal-close" onclick="closeAccountModal()"><i class="ti ti-x" style="font-size:16px"></i></button>
+    </div>
+
+    <div class="account-error" id="accountError" style="display:none;background:rgba(214,69,69,0.08);border:1px solid rgba(214,69,69,0.3);color:var(--danger-dim);border-radius:8px;padding:10px 12px;font-size:0.82rem;margin-bottom:16px"></div>
+    <div class="account-success" id="accountSuccess" style="display:none;background:rgba(90,138,18,0.08);border:1px solid rgba(90,138,18,0.3);color:var(--signal-dim);border-radius:8px;padding:10px 12px;font-size:0.82rem;margin-bottom:16px"></div>
+
+    <form id="emailForm">
+      <div class="field">
+        <label>E-Mail-Adresse</label>
+        <input type="email" id="accEmail" required>
+        <div class="field-hint">Nach Änderung erhältst du eine Bestätigungs-Mail an die neue Adresse.</div>
+      </div>
+      <button type="submit" class="btn-secondary" style="width:100%">E-Mail aktualisieren</button>
+    </form>
+
+    <div style="height:1px;background:var(--line);margin:22px 0"></div>
+
+    <form id="passwordForm">
+      <div class="field">
+        <label>Neues Passwort</label>
+        <input type="password" id="accPassword" minlength="6" required placeholder="Mindestens 6 Zeichen">
+      </div>
+      <div class="field">
+        <label>Neues Passwort bestätigen</label>
+        <input type="password" id="accPasswordConfirm" minlength="6" required>
+      </div>
+      <button type="submit" class="btn-primary" style="width:100%">Passwort ändern</button>
+    </form>
   </div>
 </div>
 
@@ -502,6 +539,48 @@ function showToast(msg, isError) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
 }
+
+// ---------- Account settings ----------
+function openAccountModal() {
+  document.getElementById('accountError').style.display = 'none';
+  document.getElementById('accountSuccess').style.display = 'none';
+  document.getElementById('emailForm').reset();
+  document.getElementById('passwordForm').reset();
+  sb.auth.getUser().then(({ data }) => {
+    document.getElementById('accEmail').value = data?.user?.email || '';
+  });
+  document.getElementById('accountBackdrop').classList.add('show');
+}
+function closeAccountModal() {
+  document.getElementById('accountBackdrop').classList.remove('show');
+}
+function showAccountMsg(msg, isError) {
+  const errEl = document.getElementById('accountError');
+  const okEl = document.getElementById('accountSuccess');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+  const el = isError ? errEl : okEl;
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+document.getElementById('emailForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const newEmail = document.getElementById('accEmail').value.trim();
+  const { error } = await sb.auth.updateUser({ email: newEmail });
+  if (error) { showAccountMsg('Fehler: ' + error.message, true); return; }
+  showAccountMsg('Bestätigungs-Mail an ' + newEmail + ' gesendet. Öffne den Link darin, um die Änderung abzuschließen.');
+});
+
+document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const pw1 = document.getElementById('accPassword').value;
+  const pw2 = document.getElementById('accPasswordConfirm').value;
+  if (pw1 !== pw2) { showAccountMsg('Die Passwörter stimmen nicht überein.', true); return; }
+  const { error } = await sb.auth.updateUser({ password: pw1 });
+  if (error) { showAccountMsg('Fehler: ' + error.message, true); return; }
+  document.getElementById('passwordForm').reset();
+  showAccountMsg('Passwort erfolgreich geändert.');
+});
 
 checkSession();
 </script>
