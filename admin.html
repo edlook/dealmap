@@ -201,9 +201,42 @@
 
   @media (max-width: 680px) {
     .field-row { grid-template-columns: 1fr; }
-    thead th:nth-child(3), tbody td:nth-child(3) { display: none; }
-    .topbar { padding: 0 16px; }
+
+    /* ---- Topbar: stop overflow, keep it usable ---- */
+    .topbar { padding: 0 14px; }
+    .topbar-logo { font-size: 0.95rem; }
+    .topbar-right { gap: 8px; }
+    #userEmail { display: none; } /* saves space; email is visible inside Konto modal anyway */
+    .btn-logout { padding: 7px 10px; font-size: 0.76rem; }
+
     #app { padding: 20px 14px 60px; }
+    .page-head h1 { font-size: 1.4rem; }
+    .btn-add { padding: 10px 14px; font-size: 0.82rem; }
+
+    /* ---- Table -> stacked cards ---- */
+    .table-wrap { background: none; border: none; border-radius: 0; overflow: visible; }
+    table, tbody, tr, td { display: block; width: 100%; }
+    thead { display: none; }
+    tbody tr {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+      margin-bottom: 10px; padding: 4px 14px; overflow: hidden;
+    }
+    tbody td {
+      border-bottom: 1px solid var(--line); padding: 10px 0;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    tbody td:last-child { border-bottom: none; }
+    tbody td[data-label]:not([data-label=""])::before {
+      content: attr(data-label); font-size: 0.66rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.02em; color: var(--ink-faint); flex-shrink: 0;
+    }
+    tbody td.cell-name { font-size: 1rem; }
+    tbody td.cell-name::before { display: none; }
+    tbody td.cell-name { justify-content: flex-start; }
+    tbody td.cell-tags-cell, tbody .cell-tags { justify-content: flex-end; }
+    tbody td .cell-tags { display: flex; justify-content: flex-end; }
+    tbody td.cell-actions { padding-top: 12px; }
+    tbody td.cell-actions .row-actions { width: 100%; justify-content: flex-end; }
   }
 </style>
 </head>
@@ -461,16 +494,16 @@ function renderTable() {
 
   tbody.innerHTML = sellers.map(s => `
     <tr>
-      <td class="cell-name"><span class="cell-avatar">${s.initials}</span>${s.name}</td>
-      <td>${s.city}</td>
-      <td><div class="cell-tags">${(s.tags||[]).map(t=>`<span class="tag-pill">${t}</span>`).join('')}</div></td>
-      <td>
+      <td class="cell-name" data-label="Name"><span class="cell-avatar">${s.initials}</span>${s.name}</td>
+      <td data-label="Stadt">${s.city}</td>
+      <td data-label="Kategorien"><div class="cell-tags">${(s.tags||[]).map(t=>`<span class="tag-pill">${t}</span>`).join('')}</div></td>
+      <td data-label="Status">
         <div class="status-cell">
           <span class="badge badge-gold" style="visibility:${s.featured ? 'visible' : 'hidden'}"><i class="ti ti-star-filled" style="font-size:10px"></i>Empfohlen</span>
           <span class="badge badge-ok" style="visibility:${s.verified ? 'visible' : 'hidden'}"><i class="ti ti-check" style="font-size:10px"></i>Verifiziert</span>
         </div>
       </td>
-      <td>
+      <td class="cell-actions" data-label="">
         <div class="row-actions">
           <button class="icon-btn" onclick="openModal(${s.id})" title="Bearbeiten"><i class="ti ti-pencil" style="font-size:15px"></i></button>
           <button class="icon-btn danger" onclick="openDeleteModal(${s.id})" title="Löschen"><i class="ti ti-trash" style="font-size:15px"></i></button>
