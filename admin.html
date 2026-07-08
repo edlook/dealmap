@@ -158,6 +158,37 @@
   .field-check input { width: auto; }
   .field-check label { text-transform: none; font-weight: 500; font-size: 0.85rem; color: var(--ink); margin: 0; }
   .field-hint { font-size: 0.72rem; color: var(--ink-faint); margin-top: 5px; }
+
+  .tag-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; min-height: 0; }
+  .tag-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(143,207,31,0.1); border: 1px solid rgba(143,207,31,0.3);
+    color: var(--signal-dim); border-radius: 6px; padding: 4px 6px 4px 10px;
+    font-size: 0.8rem; font-weight: 500;
+  }
+  .tag-chip button {
+    background: none; border: none; color: var(--signal-dim); cursor: pointer;
+    display: flex; align-items: center; padding: 2px; opacity: 0.7; font-size: 0;
+  }
+  .tag-chip button:hover { opacity: 1; }
+  .tag-add-row { display: flex; gap: 8px; }
+  .tag-add-row select {
+    flex: 1; padding: 10px 12px; border: 1px solid var(--line2); border-radius: 9px;
+    font-size: 0.85rem; font-family: var(--sans); background: var(--panel2); color: var(--ink);
+  }
+  .tag-add-row input {
+    flex: 1; padding: 10px 12px; border: 1px solid var(--line2); border-radius: 9px;
+    font-size: 0.85rem; font-family: var(--sans); background: var(--panel2); color: var(--ink);
+  }
+  .tag-add-btn {
+    width: 40px; flex-shrink: 0; border: 1px solid var(--line2); background: var(--panel2);
+    color: var(--ink-dim); border-radius: 9px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .tag-add-btn:hover { background: var(--panel); color: var(--ink); }
+  @media (max-width: 500px) {
+    .tag-add-row { flex-wrap: wrap; }
+    .tag-add-row select, .tag-add-row input { flex-basis: 100%; }
+  }
   .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
   .btn-secondary {
     flex: 1; background: var(--panel); border: 1px solid var(--line2); color: var(--ink);
@@ -280,8 +311,15 @@
       </div>
       <div class="field">
         <label>Kategorien</label>
-        <input type="text" id="fTags" placeholder="Elektronik, Gadgets, Zubehör" required>
-        <div class="field-hint">Kommagetrennt</div>
+        <div class="tag-chips" id="tagChips"></div>
+        <div class="tag-add-row">
+          <select id="tagPreset">
+            <option value="">+ Kategorie auswählen…</option>
+          </select>
+          <input type="text" id="tagCustomInput" placeholder="Eigene Kategorie…">
+          <button type="button" class="tag-add-btn" id="tagCustomAddBtn"><i class="ti ti-plus" style="font-size:15px"></i></button>
+        </div>
+        <input type="hidden" id="fTags">
       </div>
       <div class="field-check">
         <input type="checkbox" id="fFeatured">
@@ -358,6 +396,8 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const VALID_CITIES = ["Berlin","Hamburg","München","Köln","Frankfurt","Stuttgart","Düsseldorf","Leipzig","Dortmund","Essen","Bremen","Dresden","Hannover","Nürnberg","Duisburg","Bochum","Wuppertal","Bielefeld","Bonn","Münster","Karlsruhe","Mannheim","Augsburg","Wiesbaden","Gelsenkirchen","Mönchengladbach","Braunschweig","Chemnitz","Kiel","Aachen","Halle","Magdeburg","Freiburg","Krefeld","Lübeck","Mainz","Erfurt","Rostock","Kassel","Saarbrücken","Heilbronn","Potsdam","Ulm","Regensburg","Würzburg","Ingolstadt","Heidelberg","Darmstadt","Paderborn","Trier","Koblenz","Oldenburg","Osnabrück","Göttingen","Reutlingen","Siegen","Hagen","Kaiserslautern","Cottbus","Schwerin","Flensburg","Passau","Konstanz","Bayreuth"];
+
+const PRESET_CATEGORIES = ["Accessoires","Bio","Bücher","Deko","Design","Elektronik","Foto","Gadgets","Gaming","Gold","Handwerk","Handys","Hardware","Holz","IT","Kabel","Kamera","Kameras","Konsolen","Kosmetik","Kunst","Lebensmittel","Mode","Parfum","Pflege","Poster","Sammlerstücke","Schmuck","Software","Stoffe","Tablets","Taschen","Textilien","Uhren","Vinyl","Zubehör"];
 
 let sellers = [];
 
@@ -440,6 +480,58 @@ function renderTable() {
   `).join('');
 }
 
+// ---------- Tag picker ----------
+let currentTags = [];
+
+function populatePresetDropdown() {
+  const sel = document.getElementById('tagPreset');
+  const available = PRESET_CATEGORIES.filter(c => !currentTags.includes(c));
+  sel.innerHTML = '<option value="">+ Kategorie auswählen…</option>' +
+    available.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+
+function renderTagChips() {
+  const wrap = document.getElementById('tagChips');
+  wrap.innerHTML = currentTags.map((t, i) => `
+    <span class="tag-chip">${t}<button type="button" onclick="removeTag(${i})"><i class="ti ti-x" style="font-size:12px"></i></button></span>
+  `).join('');
+  document.getElementById('fTags').value = currentTags.join(',');
+  populatePresetDropdown();
+}
+
+function addTag(value) {
+  const v = value.trim();
+  if (!v) return;
+  const exists = currentTags.some(t => t.toLowerCase() === v.toLowerCase());
+  if (exists) return;
+  currentTags.push(v);
+  renderTagChips();
+}
+
+function removeTag(index) {
+  currentTags.splice(index, 1);
+  renderTagChips();
+}
+
+document.getElementById('tagPreset').addEventListener('change', function() {
+  if (this.value) { addTag(this.value); this.value = ''; }
+});
+
+document.getElementById('tagCustomAddBtn').addEventListener('click', () => {
+  const input = document.getElementById('tagCustomInput');
+  addTag(input.value);
+  input.value = '';
+  input.focus();
+});
+
+document.getElementById('tagCustomInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    addTag(e.target.value);
+    e.target.value = '';
+  }
+});
+
 // ---------- Add / Edit modal ----------
 function populateCityDropdown() {
   const sel = document.getElementById('fCity');
@@ -454,6 +546,7 @@ function openModal(id) {
   form.reset();
   document.getElementById('fId').value = '';
   document.getElementById('fVerified').checked = true;
+  currentTags = [];
 
   if (isEdit) {
     const s = sellers.find(x => x.id === id);
@@ -465,10 +558,11 @@ function openModal(id) {
     document.getElementById('fTg').value = s.tg || '';
     document.getElementById('fIg').value = s.ig || '';
     document.getElementById('fPhone').value = s.phone || '';
-    document.getElementById('fTags').value = (s.tags || []).join(', ');
+    currentTags = [...(s.tags || [])];
     document.getElementById('fFeatured').checked = !!s.featured;
     document.getElementById('fVerified').checked = !!s.verified;
   }
+  renderTagChips();
   document.getElementById('modalBackdrop').classList.add('show');
 }
 
@@ -479,6 +573,12 @@ function closeModal() {
 document.getElementById('sellerForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const btn = document.getElementById('saveBtn');
+
+  if (!currentTags.length) {
+    showToast('Bitte mindestens eine Kategorie hinzufügen.', true);
+    return;
+  }
+
   btn.disabled = true; btn.textContent = 'Speichern…';
 
   const id = document.getElementById('fId').value;
@@ -489,7 +589,7 @@ document.getElementById('sellerForm').addEventListener('submit', async (e) => {
     tg: document.getElementById('fTg').value.trim() || null,
     ig: document.getElementById('fIg').value.trim() || null,
     phone: document.getElementById('fPhone').value.trim() || null,
-    tags: document.getElementById('fTags').value.split(',').map(t => t.trim()).filter(Boolean),
+    tags: currentTags,
     featured: document.getElementById('fFeatured').checked,
     verified: document.getElementById('fVerified').checked,
   };
