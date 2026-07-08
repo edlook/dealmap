@@ -1735,7 +1735,12 @@ footer { border-top: 1px solid var(--line); margin-top: 0; }
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const SUPABASE_URL = 'https://ptmnotuxnvxohedghzjb.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0bW5vdHV4bnZ4b2hlZGdoempiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MDYyNDMsImV4cCI6MjA5OTA4MjI0M30.ayBb_yyEyy4JPw8y8OEbIx6Tgwpm3zR4R6nXYqV55cY';
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 const STATE_PATHS = {
   'DE-BW': { name: 'Baden-Württemberg', d: 'M 247.35,529.03 L 246.50,537.14 L 251.62,533.93 L 252.86,537.79 L 256.86,533.88 L 259.55,536.31 L 262.41,545.37 L 258.81,550.31 L 265.07,547.43 L 266.43,557.15 L 271.64,557.08 L 274.86,551.14 L 278.67,554.57 L 276.94,560.47 L 281.51,565.25 L 277.82,566.68 L 280.87,575.76 L 278.84,583.17 L 287.52,588.52 L 284.21,592.67 L 287.21,593.31 L 287.27,598.09 L 294.05,599.01 L 300.79,607.54 L 297.79,622.57 L 303.29,630.51 L 297.76,632.82 L 297.40,629.40 L 293.70,633.45 L 288.50,628.66 L 291.08,645.34 L 281.88,651.18 L 272.70,651.45 L 268.37,658.72 L 279.57,684.43 L 275.35,705.61 L 278.98,710.32 L 274.66,713.10 L 278.64,723.24 L 275.01,726.74 L 271.80,721.97 L 267.90,725.35 L 260.02,723.06 L 253.65,729.54 L 241.91,731.44 L 237.45,725.47 L 225.40,723.25 L 209.17,710.28 L 206.86,710.94 L 218.70,722.07 L 215.51,725.37 L 204.22,716.81 L 200.93,718.28 L 205.19,721.61 L 200.97,724.61 L 196.85,724.91 L 192.22,717.38 L 191.56,722.98 L 186.96,721.45 L 187.13,715.17 L 182.27,711.56 L 180.54,715.18 L 176.54,710.78 L 165.79,723.03 L 170.19,726.29 L 178.69,723.25 L 177.59,730.19 L 173.41,726.77 L 169.31,729.74 L 171.76,731.56 L 164.33,732.92 L 152.72,727.84 L 145.06,733.58 L 135.65,734.77 L 127.58,730.70 L 117.68,735.91 L 115.25,733.62 L 117.75,730.83 L 113.64,731.94 L 107.38,721.52 L 114.58,696.29 L 111.08,690.57 L 111.68,682.81 L 122.64,663.72 L 129.17,634.65 L 145.01,620.18 L 152.24,605.79 L 158.64,601.42 L 164.69,579.94 L 171.48,573.70 L 168.80,570.74 L 172.60,560.56 L 168.48,559.74 L 167.40,547.02 L 178.03,552.72 L 178.61,544.42 L 184.99,543.10 L 187.04,553.00 L 198.36,554.00 L 191.69,562.74 L 195.47,563.99 L 201.83,558.74 L 201.77,553.94 L 213.50,553.15 L 211.90,547.26 L 221.71,546.94 L 225.36,540.34 L 232.14,541.40 L 232.76,535.11 L 228.66,535.81 L 225.95,529.86 L 238.17,528.08 L 242.33,532.27 L 242.23,528.75 L 247.35,529.03 Z M 185.68,719.75 L 182.60,721.60 L 185.68,719.75 Z' },
   'DE-BY': { name: 'Bayern', d: 'M 278.99,455.34 L 292.09,460.71 L 295.98,470.36 L 300.21,469.64 L 302.54,474.27 L 309.86,476.40 L 310.29,486.39 L 317.55,488.85 L 318.31,484.22 L 326.22,484.16 L 317.17,477.09 L 317.51,473.54 L 324.64,470.68 L 331.78,470.66 L 335.57,475.25 L 343.09,473.08 L 345.00,480.52 L 352.16,482.61 L 351.92,462.36 L 358.46,458.04 L 363.83,458.73 L 363.01,464.80 L 369.85,472.26 L 397.16,467.15 L 399.92,474.27 L 409.32,478.03 L 406.76,483.55 L 414.16,489.24 L 414.17,497.22 L 417.90,501.94 L 433.16,509.14 L 432.27,513.53 L 436.99,514.76 L 432.04,527.72 L 427.51,531.03 L 435.69,537.39 L 439.63,550.93 L 443.41,552.15 L 444.41,561.44 L 450.87,564.42 L 452.46,568.96 L 463.51,569.30 L 468.79,573.01 L 478.39,588.35 L 493.02,596.99 L 494.34,604.43 L 499.10,607.37 L 505.11,604.72 L 510.54,612.66 L 515.77,613.46 L 521.31,623.01 L 518.11,627.63 L 519.61,639.69 L 515.03,645.40 L 499.53,639.18 L 495.12,642.11 L 493.47,659.32 L 485.30,665.98 L 457.97,675.28 L 450.43,683.18 L 466.67,707.34 L 460.79,718.33 L 469.44,719.26 L 473.51,726.67 L 467.48,742.35 L 453.49,733.71 L 455.25,728.75 L 452.37,723.35 L 440.76,723.04 L 438.93,727.10 L 434.26,727.61 L 429.67,721.10 L 418.08,723.32 L 417.78,717.54 L 412.55,721.27 L 414.84,730.11 L 377.33,730.38 L 373.71,738.19 L 364.31,738.06 L 361.08,741.80 L 363.44,744.17 L 358.04,743.61 L 353.61,749.09 L 350.35,749.07 L 351.79,745.15 L 334.21,748.63 L 330.87,741.24 L 326.71,741.24 L 330.35,737.81 L 328.03,735.82 L 320.76,737.80 L 309.50,732.60 L 306.97,736.01 L 298.52,731.53 L 301.09,745.30 L 298.61,750.20 L 291.38,757.06 L 281.36,760.00 L 285.08,748.92 L 276.51,752.35 L 276.17,743.18 L 270.05,740.50 L 268.34,734.70 L 261.96,736.49 L 257.24,730.48 L 252.92,735.52 L 245.12,732.52 L 260.02,723.06 L 267.90,725.35 L 271.80,721.97 L 275.01,726.74 L 278.64,723.24 L 274.66,713.10 L 278.98,710.32 L 275.35,705.61 L 279.57,684.43 L 268.37,658.72 L 272.70,651.45 L 281.88,651.18 L 291.08,645.34 L 288.50,628.66 L 293.70,633.45 L 297.40,629.40 L 297.76,632.82 L 303.29,630.51 L 297.79,622.57 L 300.79,607.54 L 294.05,599.01 L 287.27,598.09 L 287.21,593.31 L 284.21,592.67 L 287.52,588.52 L 278.84,583.17 L 280.87,575.76 L 277.82,566.68 L 281.51,565.25 L 276.94,560.47 L 278.67,554.57 L 274.86,551.14 L 271.64,557.08 L 267.56,557.48 L 265.07,547.43 L 258.81,550.31 L 262.40,545.03 L 257.61,533.87 L 253.23,537.78 L 251.62,533.93 L 248.00,537.83 L 247.69,527.97 L 242.23,528.75 L 242.33,532.27 L 238.17,528.08 L 229.66,528.81 L 224.87,532.66 L 230.12,533.71 L 229.42,536.16 L 231.61,533.71 L 232.14,541.40 L 225.36,540.34 L 220.21,547.63 L 209.61,545.21 L 215.47,531.96 L 212.44,530.60 L 214.28,527.09 L 211.65,527.48 L 211.59,522.61 L 207.80,522.34 L 206.86,508.75 L 209.14,508.34 L 204.45,502.87 L 206.99,497.20 L 213.83,495.95 L 215.87,499.42 L 220.34,493.66 L 229.47,495.28 L 232.21,500.22 L 238.77,499.06 L 237.50,484.83 L 248.00,485.78 L 247.50,482.22 L 253.48,478.23 L 253.62,468.15 L 267.53,467.66 L 275.13,456.08 L 278.99,455.34 Z' },
@@ -1883,30 +1888,23 @@ const CITY_XY = {
   'Bayreuth': [373.5, 513.0],
 };
 
-const SELLERS = [
-  {id:1,name:"Klaus M.",initials:"KM",city:"Berlin",tg:"@klausberlin",ig:"@klausm_",phone:"+49 30 1234567",tags:["Elektronik","Gadgets","Zubehör"],featured:true,verified:true},
-  {id:2,name:"Anna S.",initials:"AS",city:"Berlin",tg:"@annaberlin",ig:"@annas_style",phone:null,tags:["Mode","Accessoires"],featured:false,verified:true},
-  {id:3,name:"Hamid K.",initials:"HK",city:"Berlin",tg:"@hamidkauf",ig:null,phone:"+49 30 9876543",tags:["Elektronik","Kabel","Kameras"],featured:false,verified:true},
-  {id:16,name:"Nadia P.",initials:"NP",city:"Berlin",tg:"@nadiaberlin",ig:"@nadia.p",phone:"+49 30 2223344",tags:["Kosmetik","Parfum"],featured:true,verified:true},
-  {id:17,name:"Tarek B.",initials:"TB",city:"Berlin",tg:"@tarekb",ig:null,phone:"+49 30 5551234",tags:["Uhren","Schmuck"],featured:false,verified:true},
-  {id:18,name:"Lena W.",initials:"LW",city:"Berlin",tg:"@lenaberlin",ig:"@lena.w.berlin",phone:null,tags:["Mode","Textilien"],featured:false,verified:false},
-  {id:19,name:"Dmitri V.",initials:"DV",city:"Berlin",tg:"@dmitriv",ig:"@dmitri.berlin",phone:"+49 30 9991111",tags:["Elektronik","Gaming"],featured:false,verified:true},
-  {id:20,name:"Sara L.",initials:"SL",city:"Berlin",tg:"@saraberlin",ig:"@sara_l",phone:null,tags:["Handwerk","Deko","Kunst"],featured:true,verified:true},
-  {id:21,name:"Mustafa A.",initials:"MA",city:"Berlin",tg:"@mustafaberlin",ig:null,phone:"+49 30 7778899",tags:["Lebensmittel","Bio"],featured:false,verified:true},
-  {id:22,name:"Petra R.",initials:"PR",city:"Berlin",tg:"@petrab",ig:"@petra.r.shop",phone:"+49 30 4445566",tags:["Bücher","Vinyl","Sammlerstücke"],featured:false,verified:true},
-  {id:4,name:"Sofia R.",initials:"SR",city:"München",tg:"@sofiamuc",ig:"@sofia_munich",phone:"+49 89 5556789",tags:["Kosmetik","Parfum","Pflege"],featured:true,verified:true},
-  {id:5,name:"Yilmaz D.",initials:"YD",city:"München",tg:"@yilmazmuc",ig:null,phone:"+49 89 1112222",tags:["Elektronik","Uhren"],featured:false,verified:true},
-  {id:6,name:"Patrick F.",initials:"PF",city:"Hamburg",tg:"@patrickham",ig:"@pf_hamburg",phone:"+49 40 3334455",tags:["Schmuck","Gold","Uhren"],featured:true,verified:true},
-  {id:7,name:"Leila B.",initials:"LB",city:"Hamburg",tg:"@leilaham",ig:"@leila.b",phone:null,tags:["Mode","Taschen"],featured:false,verified:false},
-  {id:8,name:"Marco P.",initials:"MP",city:"Köln",tg:"@marcokoeln",ig:"@marco.cologne",phone:"+49 221 7778899",tags:["Elektronik","Handys","Tablets"],featured:true,verified:true},
-  {id:9,name:"Fatma K.",initials:"FK",city:"Köln",tg:null,ig:null,phone:"+49 221 1234000",tags:["Textilien","Stoffe"],featured:false,verified:true},
-  {id:10,name:"Ben H.",initials:"BH",city:"Frankfurt",tg:"@benffm",ig:"@ben.frankfurt",phone:"+49 69 4441122",tags:["Elektronik","Gaming","Konsolen"],featured:true,verified:true},
-  {id:11,name:"Olga M.",initials:"OM",city:"Frankfurt",tg:"@olgaffm",ig:"@olga_m",phone:null,tags:["Parfum","Kosmetik"],featured:false,verified:true},
-  {id:12,name:"Tomas V.",initials:"TV",city:"Stuttgart",tg:"@tomasstu",ig:"@tomas.v.official",phone:"+49 711 5556677",tags:["IT","Software","Hardware"],featured:false,verified:true},
-  {id:13,name:"Mia C.",initials:"MC",city:"Düsseldorf",tg:"@miaddorf",ig:"@mia_crafts",phone:"+49 211 9998877",tags:["Kunst","Design","Poster"],featured:true,verified:true},
-  {id:14,name:"Reza A.",initials:"RA",city:"Leipzig",tg:"@rezaleipzig",ig:null,phone:"+49 341 1122334",tags:["Elektronik","Kamera","Foto"],featured:false,verified:true},
-  {id:15,name:"Jana W.",initials:"JW",city:"Dresden",tg:"@janawien",ig:"@jana.w.dresden",phone:"+49 351 9876123",tags:["Handwerk","Holz","Deko"],featured:false,verified:false},
-];
+let SELLERS = [];
+
+async function loadSellers() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('sellers')
+      .select('*')
+      .order('id', { ascending: true });
+    if (error) throw error;
+    SELLERS = data || [];
+  } catch (err) {
+    console.error('Failed to load sellers from Supabase:', err);
+    SELLERS = [];
+  }
+}
+
+const sellersReady = loadSellers();
 
 const CITY_NAMES = Object.keys(CITY_XY);
 
@@ -2091,7 +2089,8 @@ function getUmkreisKm() {
   return el ? parseInt(el.value, 10) : 5;
 }
 
-function selectCity(cityName, radiusKm) {
+async function selectCity(cityName, radiusKm) {
+  await sellersReady;
   activeCityKey = cityName;
   clearActiveMarker();
   const g = document.querySelector(`.city-marker-group[data-city="${cityName}"]`);
@@ -2320,7 +2319,8 @@ function normalize(s) {
     .replace(/ä/g,'a').replace(/ö/g,'o').replace(/ü/g,'u').replace(/ß/g,'ss');
 }
 
-citySearchEl.addEventListener('input', function() {
+citySearchEl.addEventListener('input', async function() {
+  await sellersReady;
   const raw = this.value.trim();
   const q = normalize(raw);
   clearBtnEl.classList.toggle('visible', raw.length > 0);
@@ -2496,6 +2496,9 @@ function blinkSellerMarker(sellerId) {
 }
 
 function goToCity(cityName) {
+  (async () => { await sellersReady; goToCityImpl(cityName); })();
+}
+function goToCityImpl(cityName) {
   citySearchEl.value = cityName;
   dropdownEl.classList.remove('open');
   clearBtnEl.classList.add('visible');
@@ -2715,7 +2718,10 @@ document.getElementById('heroCitySearch').addEventListener('keydown', e => {
   if (e.key === 'Enter') heroSearchSubmit();
 });
 
-document.addEventListener('DOMContentLoaded', renderBaseMap);
+document.addEventListener('DOMContentLoaded', async () => {
+  await sellersReady;
+  renderBaseMap();
+});
 
 // Random chip glow animation
 (function initChipGlow() {

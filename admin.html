@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DealMap — Admin</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #e9eaec; --panel: #ffffff; --panel2: #f4f5f2;
+    --ink: #16171a; --ink-dim: #5b5e57; --ink-faint: #8b8e86;
+    --line: #dfe1db; --line2: #cdd0c7;
+    --signal: #8fcf1f; --signal-dim: #5a8a12; --signal-ink: #16210a;
+    --danger: #d64545; --danger-dim: #b23a3a;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+    --serif: "Georgia", "Iowan Old Style", serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: var(--sans); background: var(--bg); color: var(--ink);
+    min-height: 100vh;
+  }
+  a { color: inherit; }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    height: 64px; background: #16171a; color: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px; position: sticky; top: 0; z-index: 10;
+  }
+  .topbar-logo { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 1.1rem; }
+  .topbar-logo-mark { width: 9px; height: 9px; border-radius: 3px; background: var(--signal); }
+  .topbar-right { display: flex; align-items: center; gap: 16px; font-size: 0.85rem; color: rgba(255,255,255,0.7); }
+  .btn-logout {
+    background: none; border: 1px solid rgba(255,255,255,0.2); color: #fff;
+    border-radius: 8px; padding: 7px 14px; font-size: 0.82rem; cursor: pointer;
+    font-family: var(--sans); transition: border-color 0.15s ease;
+  }
+  .btn-logout:hover { border-color: rgba(255,255,255,0.5); }
+
+  /* ---------- Login screen ---------- */
+  #loginScreen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .login-card {
+    width: 100%; max-width: 380px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 20px;
+    padding: 36px 32px; box-shadow: 0 24px 64px rgba(0,0,0,0.08);
+  }
+  .login-logo { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 1.2rem; margin-bottom: 4px; }
+  .login-logo-mark { width: 10px; height: 10px; border-radius: 3px; background: var(--signal); }
+  .login-sub { color: var(--ink-dim); font-size: 0.9rem; margin: 0 0 28px; }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--ink-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.02em; }
+  .field input, .field select, .field textarea {
+    width: 100%; padding: 11px 13px; border: 1px solid var(--line2); border-radius: 9px;
+    font-size: 0.92rem; font-family: var(--sans); background: var(--panel2); color: var(--ink);
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: none; border-color: var(--signal); background: var(--panel);
+  }
+  .btn-primary {
+    width: 100%; background: var(--signal); color: var(--signal-ink); border: none;
+    border-radius: 9px; padding: 12px; font-size: 0.92rem; font-weight: 700;
+    cursor: pointer; font-family: var(--sans); transition: transform 0.15s cubic-bezier(0.16,1,0.3,1);
+  }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled { opacity: 0.5; cursor: default; }
+  .login-error {
+    background: rgba(214,69,69,0.08); border: 1px solid rgba(214,69,69,0.3); color: var(--danger-dim);
+    border-radius: 8px; padding: 10px 12px; font-size: 0.82rem; margin-bottom: 16px; display: none;
+  }
+  .login-error.show { display: block; }
+
+  /* ---------- Main app ---------- */
+  #app { display: none; max-width: 1100px; margin: 0 auto; padding: 32px 24px 80px; }
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 14px; }
+  .page-head h1 { font-family: var(--serif); font-size: 1.7rem; margin: 0 0 4px; }
+  .page-head p { margin: 0; color: var(--ink-dim); font-size: 0.9rem; }
+  .btn-add {
+    background: var(--signal); color: var(--signal-ink); border: none; border-radius: 9px;
+    padding: 11px 18px; font-size: 0.88rem; font-weight: 700; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 7px; font-family: var(--sans);
+    transition: transform 0.15s cubic-bezier(0.16,1,0.3,1);
+  }
+  .btn-add:active { transform: scale(0.97); }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 10px;
+    font-size: 0.85rem; opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.16,1,0.3,1);
+    z-index: 100; display: flex; align-items: center; gap: 8px;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--danger); }
+
+  /* ---------- Table ---------- */
+  .table-wrap {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em;
+    color: var(--ink-faint); font-weight: 600; padding: 13px 16px; border-bottom: 1px solid var(--line);
+    background: var(--panel2);
+  }
+  tbody td { padding: 13px 16px; border-bottom: 1px solid var(--line); font-size: 0.88rem; vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--panel2); }
+  .cell-name { font-weight: 600; }
+  .cell-avatar {
+    width: 30px; height: 30px; border-radius: 8px; background: rgba(143,207,31,0.14);
+    color: var(--signal-dim); display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.68rem; font-weight: 700; margin-right: 10px; vertical-align: middle;
+  }
+  .cell-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tag-pill {
+    font-size: 0.68rem; background: var(--panel2); border: 1px solid var(--line2);
+    border-radius: 5px; padding: 2px 7px; color: var(--ink-dim);
+  }
+  .badge { font-size: 0.66rem; font-weight: 600; border-radius: 5px; padding: 2px 6px; display: inline-flex; align-items: center; gap: 3px; }
+  .badge-gold { background: rgba(217,164,6,0.12); color: #a17a05; border: 1px solid rgba(217,164,6,0.3); }
+  .badge-ok { background: rgba(90,138,18,0.1); color: var(--signal-dim); border: 1px solid rgba(90,138,18,0.25); }
+  .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .icon-btn {
+    width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--line2); background: var(--panel);
+    color: var(--ink-dim); display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s ease;
+  }
+  .icon-btn:hover { border-color: var(--line2); background: var(--panel2); color: var(--ink); }
+  .icon-btn.danger:hover { border-color: rgba(214,69,69,0.4); background: rgba(214,69,69,0.06); color: var(--danger-dim); }
+
+  .empty-state { padding: 60px 20px; text-align: center; color: var(--ink-faint); }
+  .empty-state i { font-size: 32px; display: block; margin-bottom: 10px; opacity: 0.5; }
+
+  /* ---------- Modal ---------- */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(4px);
+    display: none; align-items: center; justify-content: center; z-index: 200; padding: 20px;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto;
+    background: var(--panel); border-radius: 18px; padding: 28px 28px 24px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+  }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .modal-head h2 { font-family: var(--serif); font-size: 1.25rem; margin: 0; }
+  .modal-close {
+    width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line2); background: var(--panel);
+    color: var(--ink-dim); display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field-check { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .field-check input { width: auto; }
+  .field-check label { text-transform: none; font-weight: 500; font-size: 0.85rem; color: var(--ink); margin: 0; }
+  .field-hint { font-size: 0.72rem; color: var(--ink-faint); margin-top: 5px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+  .btn-secondary {
+    flex: 1; background: var(--panel); border: 1px solid var(--line2); color: var(--ink);
+    border-radius: 9px; padding: 12px; font-size: 0.88rem; font-weight: 600; cursor: pointer; font-family: var(--sans);
+  }
+  .modal-actions .btn-primary { flex: 1; }
+  .btn-delete-confirm {
+    background: var(--danger); color: #fff;
+  }
+
+  @media (max-width: 680px) {
+    .field-row { grid-template-columns: 1fr; }
+    thead th:nth-child(3), tbody td:nth-child(3) { display: none; }
+    .topbar { padding: 0 16px; }
+    #app { padding: 20px 14px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo"><span class="login-logo-mark"></span>DealMap Admin</div>
+    <p class="login-sub">Melde dich an, um Händler zu verwalten.</p>
+    <div class="login-error" id="loginError"></div>
+    <form id="loginForm">
+      <div class="field">
+        <label>E-Mail</label>
+        <input type="email" id="loginEmail" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label>Passwort</label>
+        <input type="password" id="loginPassword" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn-primary" id="loginBtn">Anmelden</button>
+    </form>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-logo"><span class="topbar-logo-mark"></span>DealMap Admin</div>
+    <div class="topbar-right">
+      <span id="userEmail"></span>
+      <button class="btn-logout" onclick="logout()">Abmelden</button>
+    </div>
+  </div>
+
+  <div style="padding-top:28px">
+    <div class="page-head">
+      <div>
+        <h1>Händler</h1>
+        <p id="sellerCount">Lädt…</p>
+      </div>
+      <button class="btn-add" onclick="openModal()"><i class="ti ti-plus" style="font-size:16px"></i>Händler hinzufügen</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Stadt</th>
+            <th>Kategorien</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="sellerRows"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none">
+        <i class="ti ti-users"></i>
+        Noch keine Händler. Füge den ersten hinzu.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ADD/EDIT MODAL ============ -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modalTitle">Händler hinzufügen</h2>
+      <button class="modal-close" onclick="closeModal()"><i class="ti ti-x" style="font-size:16px"></i></button>
+    </div>
+    <form id="sellerForm">
+      <input type="hidden" id="fId">
+      <div class="field-row">
+        <div class="field">
+          <label>Name</label>
+          <input type="text" id="fName" placeholder="Klaus M." required>
+        </div>
+        <div class="field">
+          <label>Kürzel</label>
+          <input type="text" id="fInitials" placeholder="KM" maxlength="3" required>
+          <div class="field-hint">Für den Avatar, z. B. Initialen</div>
+        </div>
+      </div>
+      <div class="field">
+        <label>Stadt</label>
+        <select id="fCity" required></select>
+        <div class="field-hint">Nur Städte aus dieser Liste erscheinen auf der Karte</div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Telegram</label>
+          <input type="text" id="fTg" placeholder="@klausberlin">
+        </div>
+        <div class="field">
+          <label>Instagram</label>
+          <input type="text" id="fIg" placeholder="@klausm_">
+        </div>
+      </div>
+      <div class="field">
+        <label>Telefon</label>
+        <input type="text" id="fPhone" placeholder="+49 30 1234567">
+      </div>
+      <div class="field">
+        <label>Kategorien</label>
+        <input type="text" id="fTags" placeholder="Elektronik, Gadgets, Zubehör" required>
+        <div class="field-hint">Kommagetrennt</div>
+      </div>
+      <div class="field-check">
+        <input type="checkbox" id="fFeatured">
+        <label for="fFeatured">Empfohlen (goldener Stern)</label>
+      </div>
+      <div class="field-check">
+        <input type="checkbox" id="fVerified" checked>
+        <label for="fVerified">Verifiziert (grüner Haken)</label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" onclick="closeModal()">Abbrechen</button>
+        <button type="submit" class="btn-primary" id="saveBtn">Speichern</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ============ DELETE CONFIRM MODAL ============ -->
+<div class="modal-backdrop" id="deleteBackdrop">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-head">
+      <h2>Händler löschen?</h2>
+      <button class="modal-close" onclick="closeDeleteModal()"><i class="ti ti-x" style="font-size:16px"></i></button>
+    </div>
+    <p style="color:var(--ink-dim);font-size:0.9rem;margin:0 0 4px" id="deleteConfirmText"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" onclick="closeDeleteModal()">Abbrechen</button>
+      <button type="button" class="btn-primary btn-delete-confirm" id="confirmDeleteBtn">Löschen</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://ptmnotuxnvxohedghzjb.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB0bW5vdHV4bnZ4b2hlZGdoempiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MDYyNDMsImV4cCI6MjA5OTA4MjI0M30.ayBb_yyEyy4JPw8y8OEbIx6Tgwpm3zR4R6nXYqV55cY';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const VALID_CITIES = ["Berlin","Hamburg","München","Köln","Frankfurt","Stuttgart","Düsseldorf","Leipzig","Dortmund","Essen","Bremen","Dresden","Hannover","Nürnberg","Duisburg","Bochum","Wuppertal","Bielefeld","Bonn","Münster","Karlsruhe","Mannheim","Augsburg","Wiesbaden","Gelsenkirchen","Mönchengladbach","Braunschweig","Chemnitz","Kiel","Aachen","Halle","Magdeburg","Freiburg","Krefeld","Lübeck","Mainz","Erfurt","Rostock","Kassel","Saarbrücken","Heilbronn","Potsdam","Ulm","Regensburg","Würzburg","Ingolstadt","Heidelberg","Darmstadt","Paderborn","Trier","Koblenz","Oldenburg","Osnabrück","Göttingen","Reutlingen","Siegen","Hagen","Kaiserslautern","Cottbus","Schwerin","Flensburg","Passau","Konstanz","Bayreuth"];
+
+let sellers = [];
+
+// ---------- Auth ----------
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginError');
+  errEl.classList.remove('show');
+  btn.disabled = true; btn.textContent = 'Anmelden…';
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  btn.disabled = false; btn.textContent = 'Anmelden';
+  if (error) {
+    errEl.textContent = 'Anmeldung fehlgeschlagen: falsche E-Mail oder falsches Passwort.';
+    errEl.classList.add('show');
+    return;
+  }
+  showApp();
+});
+
+async function logout() {
+  await sb.auth.signOut();
+  location.reload();
+}
+
+async function checkSession() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) { showApp(); }
+}
+
+function showApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  sb.auth.getUser().then(({ data }) => {
+    document.getElementById('userEmail').textContent = data?.user?.email || '';
+  });
+  loadSellers();
+}
+
+// ---------- Load + render ----------
+async function loadSellers() {
+  const { data, error } = await sb.from('sellers').select('*').order('id', { ascending: true });
+  if (error) { showToast('Fehler beim Laden: ' + error.message, true); return; }
+  sellers = data || [];
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.getElementById('sellerRows');
+  const empty = document.getElementById('emptyState');
+  document.getElementById('sellerCount').textContent = `${sellers.length} Händler insgesamt`;
+
+  if (!sellers.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  tbody.innerHTML = sellers.map(s => `
+    <tr>
+      <td class="cell-name"><span class="cell-avatar">${s.initials}</span>${s.name}</td>
+      <td>${s.city}</td>
+      <td><div class="cell-tags">${(s.tags||[]).map(t=>`<span class="tag-pill">${t}</span>`).join('')}</div></td>
+      <td>
+        ${s.featured ? '<span class="badge badge-gold"><i class="ti ti-star-filled" style="font-size:10px"></i>Empfohlen</span>' : ''}
+        ${s.verified ? '<span class="badge badge-ok"><i class="ti ti-check" style="font-size:10px"></i>Verifiziert</span>' : ''}
+      </td>
+      <td>
+        <div class="row-actions">
+          <button class="icon-btn" onclick="openModal(${s.id})" title="Bearbeiten"><i class="ti ti-pencil" style="font-size:15px"></i></button>
+          <button class="icon-btn danger" onclick="openDeleteModal(${s.id})" title="Löschen"><i class="ti ti-trash" style="font-size:15px"></i></button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ---------- Add / Edit modal ----------
+function populateCityDropdown() {
+  const sel = document.getElementById('fCity');
+  sel.innerHTML = VALID_CITIES.map(c => `<option value="${c}">${c}</option>`).join('');
+}
+populateCityDropdown();
+
+function openModal(id) {
+  const isEdit = !!id;
+  document.getElementById('modalTitle').textContent = isEdit ? 'Händler bearbeiten' : 'Händler hinzufügen';
+  const form = document.getElementById('sellerForm');
+  form.reset();
+  document.getElementById('fId').value = '';
+  document.getElementById('fVerified').checked = true;
+
+  if (isEdit) {
+    const s = sellers.find(x => x.id === id);
+    if (!s) return;
+    document.getElementById('fId').value = s.id;
+    document.getElementById('fName').value = s.name;
+    document.getElementById('fInitials').value = s.initials;
+    document.getElementById('fCity').value = s.city;
+    document.getElementById('fTg').value = s.tg || '';
+    document.getElementById('fIg').value = s.ig || '';
+    document.getElementById('fPhone').value = s.phone || '';
+    document.getElementById('fTags').value = (s.tags || []).join(', ');
+    document.getElementById('fFeatured').checked = !!s.featured;
+    document.getElementById('fVerified').checked = !!s.verified;
+  }
+  document.getElementById('modalBackdrop').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modalBackdrop').classList.remove('show');
+}
+
+document.getElementById('sellerForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = 'Speichern…';
+
+  const id = document.getElementById('fId').value;
+  const payload = {
+    name: document.getElementById('fName').value.trim(),
+    initials: document.getElementById('fInitials').value.trim().toUpperCase(),
+    city: document.getElementById('fCity').value,
+    tg: document.getElementById('fTg').value.trim() || null,
+    ig: document.getElementById('fIg').value.trim() || null,
+    phone: document.getElementById('fPhone').value.trim() || null,
+    tags: document.getElementById('fTags').value.split(',').map(t => t.trim()).filter(Boolean),
+    featured: document.getElementById('fFeatured').checked,
+    verified: document.getElementById('fVerified').checked,
+  };
+
+  let error;
+  if (id) {
+    ({ error } = await sb.from('sellers').update(payload).eq('id', id));
+  } else {
+    ({ error } = await sb.from('sellers').insert(payload));
+  }
+
+  btn.disabled = false; btn.textContent = 'Speichern';
+
+  if (error) { showToast('Fehler: ' + error.message, true); return; }
+  closeModal();
+  showToast(id ? 'Händler aktualisiert' : 'Händler hinzugefügt');
+  loadSellers();
+});
+
+// ---------- Delete ----------
+let pendingDeleteId = null;
+function openDeleteModal(id) {
+  pendingDeleteId = id;
+  const s = sellers.find(x => x.id === id);
+  document.getElementById('deleteConfirmText').textContent = `„${s?.name}" wird dauerhaft entfernt. Das kann nicht rückgängig gemacht werden.`;
+  document.getElementById('deleteBackdrop').classList.add('show');
+}
+function closeDeleteModal() {
+  document.getElementById('deleteBackdrop').classList.remove('show');
+  pendingDeleteId = null;
+}
+document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+  if (!pendingDeleteId) return;
+  const { error } = await sb.from('sellers').delete().eq('id', pendingDeleteId);
+  closeDeleteModal();
+  if (error) { showToast('Fehler: ' + error.message, true); return; }
+  showToast('Händler gelöscht');
+  loadSellers();
+});
+
+// ---------- Toast ----------
+let toastTimer;
+function showToast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (isError ? ' error' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+checkSession();
+</script>
+</body>
+</html>
